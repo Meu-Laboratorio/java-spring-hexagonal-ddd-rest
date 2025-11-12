@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: Demo
+    name: full-demo
   main:
     banner-mode: off
 
@@ -15,6 +15,8 @@ spring:
     password: dev
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
   h2:
     console:
       enabled: true
@@ -40,4 +42,4 @@ logging:
     name: logs/${spring.application.name}.log
   level:
     '[org.springframework]': error
-    '[com.gusrubin.demo]': info
+    '[com.gusrubin.fulldemo]': info
