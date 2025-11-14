@@ -1,0 +1,35 @@
+<div class="container">
+  @if (user) {
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+          <h1 style="margin-bottom: 0.25rem;">{{ user.name }}</h1>
+          <p style="color: var(--text-muted); font-size: 0.875rem;">ID: {{ user.id }}</p>
+        </div>
+        <button class="btn-secondary" (click)="goBack()">
+          ← Voltar
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Nova Tarefa</h2>
+      <app-task-form (save)="handleAddTask($event)"></app-task-form>
+    </div>
+
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="margin: 0;">Minhas Tarefas</h2>
+        <button class="btn-secondary" (click)="reload()" style="padding: 0.5rem 1rem;">
+          🔄 Atualizar
+        </button>
+      </div>
+      
+      <app-task-list 
+        [tasks]="user.tasks!" 
+        (delete)="handleDeleteTask($event)" 
+        (update)="handleUpdateTask($event)">
+      </app-task-list>
+    </div>
+  }
+</div>

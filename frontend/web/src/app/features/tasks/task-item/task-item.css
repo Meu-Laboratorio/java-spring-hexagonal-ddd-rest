@@ -1,0 +1,14 @@
+.task-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0;
+}
+
+.title {
+    flex: 1;
+}
+
+button {
+    margin-left: auto;
+}

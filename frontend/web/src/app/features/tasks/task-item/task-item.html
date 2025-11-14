@@ -1,0 +1,10 @@
+<li class="task-item">
+    <span class="title">{{ task.title }}</span>
+    <span class="scheduled">{{ task.scheduledDateTime | date:'short' }}</span>
+    <button (click)="onToggleDone()">
+        {{ task.done ? 'Marcar como pendente' : 'Marcar como concluída' }}
+    </button>
+    <button (click)="onDelete()">
+        Apagar
+    </button>
+</li>

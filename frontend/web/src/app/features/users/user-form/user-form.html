@@ -1,0 +1,71 @@
+<div class="container">
+  <div class="card">
+    <h1>Bem-vindo ao Gerenciador de Tarefas</h1>
+    <p style="color: var(--text-muted); margin-bottom: 2rem;">
+      Crie um novo usuário ou acesse um existente
+    </p>
+
+    <!-- Criar novo usuário -->
+    <div class="section">
+      <h2>Criar Novo Usuário</h2>
+      
+      @if (successMessage()) {
+        <div class="success-message">{{ successMessage() }}</div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="name">Nome Completo</label>
+          <input 
+            id="name" 
+            type="text"
+            formControlName="name" 
+            placeholder="Digite seu nome"
+          />
+          @if (form.controls.name.invalid && form.controls.name.touched) {
+            <div class="error-message">Nome é obrigatório.</div>
+          }
+        </div>
+
+        <button type="submit" class="btn-primary" [disabled]="form.invalid || isLoading()">
+          {{ isLoading() ? 'Salvando...' : 'Criar e Começar' }}
+        </button>
+      </form>
+    </div>
+
+    <div class="divider">
+      <span>OU</span>
+    </div>
+
+    <!-- Acessar usuário existente -->
+    <div class="section">
+      <h2>Acessar Usuário Existente</h2>
+      
+      @if (errorMessage()) {
+        <div class="error-message" style="padding: 0.75rem; background-color: rgba(239, 68, 68, 0.1); border-radius: 6px; margin-bottom: 1rem;">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <form [formGroup]="accessForm" (ngSubmit)="onAccessUser()">
+        <div class="form-group">
+          <label for="userId">ID do Usuário</label>
+          <input 
+            id="userId" 
+            type="number"
+            formControlName="userId" 
+            placeholder="Digite o ID do usuário"
+            min="1"
+          />
+          @if (accessForm.controls.userId.invalid && accessForm.controls.userId.touched) {
+            <div class="error-message">ID do usuário é obrigatório.</div>
+          }
+        </div>
+
+        <button type="submit" class="btn-secondary" [disabled]="accessForm.invalid || isAccessLoading()">
+          {{ isAccessLoading() ? 'Carregando...' : 'Acessar Tarefas' }}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
