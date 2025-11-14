@@ -1,0 +1,33 @@
+@if (tasks.length === 0) {
+  <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+    <p style="font-size: 1.125rem;">📝 Nenhuma tarefa cadastrada</p>
+    <p style="font-size: 0.875rem;">Adicione sua primeira tarefa acima!</p>
+  </div>
+} @else {
+  <ul class="task-list">
+    @for (task of tasks; track task.id) {
+      <li class="task-item" [class.task-done]="task.done">
+        <div class="task-content">
+          <h3 class="task-title" [class.done]="task.done">{{ task.title }}</h3>
+          <p class="task-date">📅 {{ task.scheduledDateTime | date:'dd/MM/yyyy HH:mm' }}</p>
+        </div>
+        <div class="task-actions">
+          <button 
+            class="btn-secondary" 
+            (click)="onToggleDone(task)"
+            [title]="task.done ? 'Marcar como pendente' : 'Marcar como concluída'"
+          >
+            {{ task.done ? '↩️' : '✅' }}
+          </button>
+          <button 
+            class="btn-danger" 
+            (click)="onDelete(task.id)"
+            title="Excluir tarefa"
+          >
+            🗑️
+          </button>
+        </div>
+      </li>
+    }
+  </ul>
+}
