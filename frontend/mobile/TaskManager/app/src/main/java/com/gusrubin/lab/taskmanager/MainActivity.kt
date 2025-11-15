@@ -1,60 +1,44 @@
 package com.gusrubin.lab.taskmanager
 
+import android.app.Activity
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import android.content.Intent
 import android.os.Bundle
+import android.widget.DatePicker
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gusrubin.lab.taskmanager.data.model.Task
 import com.gusrubin.lab.taskmanager.data.model.UserWithTasks
+import com.gusrubin.lab.taskmanager.data.network.RetrofitInstance
+import com.gusrubin.lab.taskmanager.data.repository.TaskRepository
 import com.gusrubin.lab.taskmanager.ui.theme.TaskManagerTheme
-import com.gusrubin.lab.taskmanager.ui.viewmodel.UiState
-import kotlin.getValue
 import com.gusrubin.lab.taskmanager.ui.viewmodel.TaskViewModel
 import com.gusrubin.lab.taskmanager.ui.viewmodel.TaskViewModelFactory
-import com.gusrubin.lab.taskmanager.data.repository.TaskRepository
-import com.gusrubin.lab.taskmanager.data.network.RetrofitInstance
+import com.gusrubin.lab.taskmanager.ui.viewmodel.UiState
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+import java.util.Calendar
 
 class MainActivity : ComponentActivity() {
 
-    // Instancia o ViewModel usando a nossa Factory
     private val viewModel: TaskViewModel by viewModels {
         TaskViewModelFactory(TaskRepository(RetrofitInstance.api))
     }
@@ -62,155 +46,190 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Exemplo: ID fixo do usuário para demonstração.
-        val exampleUserId = "1"
+        val userIdString = intent.getStringExtra("USER_ID")
+        val userId = userIdString?.toLongOrNull()
 
-        enableEdgeToEdge()
         setContent {
             TaskManagerTheme {
-                // Coleta o estado da UI a partir do ViewModel
                 val userState by viewModel.userState.collectAsState()
-//
-//                // LaunchedEffect é a forma correta de chamar uma suspend fun
-//                // uma única vez quando o Composable é exibido.
-                LaunchedEffect(key1 = Unit) {
-                    viewModel.fetchUser(exampleUserId)
+
+                if (userId != null) {
+                    LaunchedEffect(key1 = userId) {
+                        viewModel.fetchUser(userId)
+                    }
                 }
 
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    TaskScreen(
-                        uiState = userState,
-                        onAddTask = { description ->
-                            val newTask = Task(id = "", description = description, isDone = false)
-                            viewModel.createTask(exampleUserId, newTask)
-                        },
-                        onUpdateTask = { task ->
-                            viewModel.updateUser(
-                                exampleUserId,
-                                task.id,
-                                task.copy(isDone = !task.isDone)
-                            )
-                        },
-                        onDeleteTask = { taskId ->
-                            viewModel.deleteTask(exampleUserId, taskId)
+                    if (userId != null) {
+                        TaskScreen(
+                            uiState = userState,
+                            onAddTask = { title, scheduledDateTime ->
+                                val newTask = Task(
+                                    id = 0L,
+                                    title = title,
+                                    scheduledDateTime = scheduledDateTime,
+                                    done = false
+                                )
+                                viewModel.createTask(userId, newTask)
+                            },
+                            onUpdateTask = { task ->
+                                viewModel.updateUser(userId, task)
+                            },
+                            onDeleteTask = { taskId ->
+                                viewModel.deleteTask(userId, taskId)
+                            }
+                        )
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Erro: ID do usuário inválido ou não fornecido.")
                         }
-                    )
+                    }
                 }
-
-//                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-//                    Greeting(
-//                        name = "Android",
-//                        modifier = Modifier.padding(innerPadding)
-//                    )
-//                }
             }
         }
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    TaskManagerTheme {
-        Greeting("Android")
-    }
-}
-
-// Composable principal que decide o que mostrar na tela
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskScreen(
     uiState: UiState<UserWithTasks>,
-    onAddTask: (String) -> Unit,
+    onAddTask: (String, String?) -> Unit,
     onUpdateTask: (Task) -> Unit,
-    onDeleteTask: (String) -> Unit
+    onDeleteTask: (Long) -> Unit
 ) {
-    when (uiState) {
-        is UiState.Loading -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        }
+    val context = LocalContext.current
 
-        is UiState.Error -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = "Erro: ${uiState.message}", color = MaterialTheme.colorScheme.error)
-            }
-        }
-
-        is UiState.Success -> {
-            TaskListContent(
-                userWithTasks = uiState.data,
-                onAddTask = onAddTask,
-                onUpdateTask = onUpdateTask,
-                onDeleteTask = onDeleteTask
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Gerenciador de Tarefas") },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        val intent = Intent(context, LoginActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                        context.startActivity(intent)
+                        (context as? Activity)?.finish()
+                    }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                    }
+                }
             )
+        }
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding)) {
+            when (uiState) {
+                is UiState.Idle -> { /* Não mostra nada */ }
+                is UiState.Loading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+                is UiState.Error -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(text = "Erro: ${uiState.message}", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                is UiState.Success -> {
+                    TaskListContent(
+                        userWithTasks = uiState.data,
+                        onAddTask = onAddTask,
+                        onUpdateTask = onUpdateTask,
+                        onDeleteTask = onDeleteTask
+                    )
+                }
+            }
         }
     }
 }
 
-// Composable que exibe o conteúdo quando os dados foram carregados com sucesso
+
 @Composable
 fun TaskListContent(
     userWithTasks: UserWithTasks,
-    onAddTask: (String) -> Unit,
+    onAddTask: (String, String?) -> Unit,
     onUpdateTask: (Task) -> Unit,
-    onDeleteTask: (String) -> Unit
+    onDeleteTask: (Long) -> Unit
 ) {
     var text by remember { mutableStateOf("") }
+    var scheduledDateTime by remember { mutableStateOf<LocalDateTime?>(null) }
+    val context = LocalContext.current
+
+    val calendar = Calendar.getInstance()
+    val year = calendar.get(Calendar.YEAR)
+    val month = calendar.get(Calendar.MONTH)
+    val day = calendar.get(Calendar.DAY_OF_MONTH)
+    val hour = calendar.get(Calendar.HOUR_OF_DAY)
+    val minute = calendar.get(Calendar.MINUTE)
+
+    val timePickerDialog = TimePickerDialog(
+        context,
+        { _, selectedHour, selectedMinute ->
+            scheduledDateTime = scheduledDateTime?.withHour(selectedHour)?.withMinute(selectedMinute)
+        },
+        hour, minute, true
+    )
+
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _: DatePicker, selectedYear, selectedMonth, selectedDayOfMonth ->
+            scheduledDateTime = LocalDateTime.of(selectedYear, selectedMonth + 1, selectedDayOfMonth, 0, 0)
+            timePickerDialog.show()
+        },
+        year, month, day
+    )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(
-            text = "Tarefas de ${userWithTasks.name}",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Text("Tarefas de ${userWithTasks.name}", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Campo de texto e botão para adicionar nova tarefa
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                label = { Text("Nova tarefa") },
+                label = { Text("Título da Tarefa") },
                 modifier = Modifier.weight(1f)
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = {
-                if (text.isNotBlank()) {
-                    onAddTask(text)
-                    text = "" // Limpa o campo
-                }
-            }) {
-                Text("Add")
+            IconButton(onClick = { datePickerDialog.show() }) {
+                Icon(Icons.Default.DateRange, contentDescription = "Selecionar Prazo")
             }
+        }
+
+        scheduledDateTime?.let {
+            Text(
+                text = "Prazo: ${it.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))}",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(onClick = {
+            if (text.isNotBlank()) {
+                val formattedDateTime = scheduledDateTime?.format(DateTimeFormatter.ISO_DATE_TIME)
+                onAddTask(text, formattedDateTime)
+                text = ""
+                scheduledDateTime = null
+            }
+        }) {
+            Text("Add")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Lista de tarefas
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(userWithTasks.tasks, key = { it.id }) { task ->
                 TaskItem(
                     task = task,
-                    onCheckedChange = { onUpdateTask(task) },
+                    onUpdateTask = onUpdateTask,
                     onDeleteClick = { onDeleteTask(task.id) }
                 )
                 Divider()
@@ -219,11 +238,10 @@ fun TaskListContent(
     }
 }
 
-// Composable para um único item da lista de tarefas
 @Composable
 fun TaskItem(
     task: Task,
-    onCheckedChange: (Boolean) -> Unit,
+    onUpdateTask: (Task) -> Unit,
     onDeleteClick: () -> Unit
 ) {
     Row(
@@ -233,14 +251,28 @@ fun TaskItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Checkbox(
-            checked = task.isDone,
-            onCheckedChange = onCheckedChange
+            checked = task.done,
+            onCheckedChange = { onUpdateTask(task.copy(done = !task.done)) }
         )
-        Text(
-            text = task.description,
-            modifier = Modifier.weight(1f),
-            fontSize = 18.sp
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = task.title, fontSize = 18.sp)
+            task.scheduledDateTime?.let {
+                val formattedDateTime = remember(it) {
+                    try {
+                        LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME)
+                            .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+                    } catch (e: DateTimeParseException) {
+                        null
+                    }
+                }
+                formattedDateTime?.let {
+                    Text(
+                        text = "Prazo: $it",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        }
         IconButton(onClick = onDeleteClick) {
             Icon(Icons.Default.Delete, contentDescription = "Deletar Tarefa")
         }

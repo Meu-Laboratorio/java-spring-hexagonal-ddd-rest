@@ -8,15 +8,15 @@ class TaskRepository(private val apiService: ApiService) {
 
     suspend fun createUser(user: User) = apiService.createUser(user)
 
-    suspend fun getUser(userId: String) = apiService.getUser(userId)
+    suspend fun getUser(userId: Long) = apiService.getUser(userId.toString())
 
-    suspend fun deleteUser(userId: String) = apiService.deleteUser(userId)
+    suspend fun deleteUser(userId: Long) = apiService.deleteUser(userId.toString())
 
-    suspend fun createTask(userId: String, task: Task) = apiService.createTask(userId, task)
+    suspend fun createTask(userId: Long, task: Task) = apiService.createTask(userId.toString(), task)
 
-    suspend fun updateTask(userId: String, taskId: String, task: Task) =
-        apiService.updateTask(userId, taskId, task)
+    suspend fun updateTask(userId: Long, taskId: String, task: Task) =
+        apiService.updateTask(userId.toString(), taskId, task)
 
-    suspend fun deleteTask(userId: String, taskId: String) = apiService.deleteTask(userId, taskId)
+    suspend fun deleteTask(userId: Long, taskId: String) = apiService.deleteTask(userId.toString(), taskId)
 
 }
